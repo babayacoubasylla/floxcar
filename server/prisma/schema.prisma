@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../src/generated/client" // Optionnel : si vous voulez un dossier de sortie personnalisé
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums ---
+
+enum Role {
+  LOGISTICIEN
+  FINANCE
+  ADMIN_GENERAL
+  SUPER_ADMIN
+}
+
+enum StatutDepense {
+  BROUILLON
+  SOUMIS
+  REJETE_FINANCE
+  VALIDE_FINANCE
+  REJETE_ADMIN
+  VALIDE_ADMIN
+  COMPLEMENT_DEMANDE
+  TERMINE
+  // REPORTÉ peut être géré via le champ dateReport et le statut SOUMIS
+}
+
+// --- Models ---
+
+model User {
+  id        Int      @id @default(autoincrement())
+  nom       String
+  email     String   @unique
+  password  String   // Assurez-vous de hasher les mots de passe dans l'application
+  role      Role
+  createdAt DateTime @default(now())
+
+  // Relations
+  // Un utilisateur peut soumettre plusieurs dépenses
+  demandesSoumises Depense[] @relation("SoumisPar")
+  // Un utilisateur (finance) peut valider plusieurs dépenses
+  demandesFinance  Depense[] @relation("ValideParFinance")
+  // Un utilisateur (admin) peut valider plusieurs dépenses
+  demandesAdmin    Depense[] @relation("ValideParAdmin")
+  // Note : Si un utilisateur est supprimé, ses dépenses restent, sauf si onDelete: Cascade est ajouté.
+}
+
+model Vehicule {
+  id              Int      @id @default(autoincrement())
+  type            String   // ex: "Pickup", "Benne", etc.
+  immatriculation String   @unique
+  codeParc        String?  // Nouveau champ optionnel
+  description     String?
+  statut          String?  // ex: "actif", "en_reparation", etc.
+  createdAt       DateTime @default(now())
+
+  // Relations
+  depenses Depense[]
+  // Note : Si un véhicule est supprimé, ses dépenses peuvent l'être aussi si onDelete: Cascade.
+}
+
+// Modèle pour les types de dépense dynamiques (au lieu d'un enum statique)
+model TypeDepense {
+  id          Int       @id @default(autoincrement())
+  nom         String    @unique // Nom du type, ex: "Carburant", "Mécanique"
+  description String?
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  depenses    Depense[] // Liste des dépenses de ce type
+}
+
+model Depense {
+  id                     Int        @id @default(autoincrement())
+  dateIntervention       DateTime   // Date de l'intervention
+  typeVehicule           String     // Type du véhicule concerné, ex: "Pickup"
+  codeParc               String     // Code parc du véhicule, ex: "AB-123-CD"
+  typeDepenseId          Int        // ID du type de dépense
+  typeDepense            TypeDepense @relation(fields: [typeDepenseId], references: [id]) // Relation vers le type
+  libelle                String     // Libellé de la dépense
+  quantite               Int?       // Quantité (optionnelle)
+  montant                Int        // Montant en FCFA
+  statut                 StatutDepense @default(SOUMIS) // Statut actuel de la dépense
+  dateCreation           DateTime   @default(now()) // Date de création de la demande
+
+  // Commentaires
+  commentaireFinance     String?    // Commentaire de la finance
+  commentaireAdmin       String?    // Commentaire de l'admin
+  commentaireLogisticien String?    // Commentaire du logisticien
+
+  // Date de report (si l'admin décide de reporter)
+  dateReport             DateTime?  // Date à laquelle la dépense est reportée
+
+  // --- Relations ---
+  vehiculeId             Int
+  vehicule               Vehicule   @relation(fields: [vehiculeId], references: [id])
+  // Note: onDelete: Cascade peut être ajouté ici si nécessaire
+
+  soumisParId            Int
+  soumisPar              User       @relation("SoumisPar", fields: [soumisParId], references: [id])
+  // Note: onDelete: Cascade peut être ajouté ici si nécessaire
+
+  valideParFinanceId    Int?
+  valideParFinance       User?      @relation("ValideParFinance", fields: [valideParFinanceId], references: [id])
+  // Note: onDelete: SetNull ou Cascade selon les règles métier
+
+  valideParAdminId       Int?
+  valideParAdmin         User?      @relation("ValideParAdmin", fields: [valideParAdminId], references: [id])
+  // Note: onDelete: SetNull ou Cascade selon les règles métier
+
+  // Documents joints
+  documents              Document[]
+
+  // Commentaires sur la dépense
+  commentaires           Commentaire[] @relation("DepenseCommentaires")
+  // Note: onDelete: Cascade est logique ici
+}
+
+model Commentaire {
+  id         Int      @id @default(autoincrement())
+  texte      String   // Contenu du commentaire
+  auteur     String   // Nom de l'auteur (ou ID utilisateur si préféré)
+  date       DateTime @default(now()) // Date du commentaire
+  depenseId  Int      // ID de la dépense concernée
+  depense    Depense  @relation("DepenseCommentaires", fields: [depenseId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id         Int     @id @default(autoincrement())
+  url        String  // URL du fichier stocké (ex: Cloudinary, S3)
+  nom        String  // Nom original du fichier
+  depenseId  Int     // ID de la dépense associée
+  depense    Depense @relation(fields: [depenseId], references: [id], onDelete: Cascade)
+}
