@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { getToken, logout } from './utils/auth';
 
+// ✅ Utilise /api → Nginx redirige vers le backend
 const API_BASE_URL = '/api';
 
 const api = axios.create({

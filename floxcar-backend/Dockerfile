@@ -8,7 +8,8 @@ RUN npm ci
 
 COPY . .
 
-# 🔥 LIGNE INDISPENSABLE :
+# 🔥 Compile le TypeScript → crée dist/
 RUN npm run build
 
+# Exécute migrations + seed + démarre le serveur
 CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node dist/server.js"]
