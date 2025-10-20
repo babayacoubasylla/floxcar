@@ -1,10 +1,13 @@
-// client/src/api.ts
+// floxcar-frontend/src/api.ts
 import axios from 'axios';
-import { getToken } from './utils/auth';
+import { getToken, logout } from './utils/auth';
 
-// ✅ Toujours utiliser /api → le proxy (dev) ou Nginx (prod) s'occupe du reste
+// En production, VITE_API_URL est défini dans Render
+// En local, Vite proxy /api → http://localhost:5000/api
+const API_BASE_URL = '/api';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
 });
 
 api.interceptors.request.use((config) => {
@@ -24,11 +27,7 @@ api.interceptors.response.use(
       originalRequest.url !== '/auth/login'
     ) {
       const currentToken = getToken();
-      if (currentToken) {
-        // Utilisez une fonction logout qui nettoie localStorage
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      }
+      if (currentToken) logout();
       if (window.location.pathname !== '/') {
         window.location.href = '/';
       }

@@ -32,22 +32,14 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        nom: user.nom,
-      },
+      { id: user.id, email: user.email, role: user.role, nom: user.nom },
       jwtSecret,
       { expiresIn: '7d' }
     );
 
     const { password: _, ...userWithoutPassword } = user;
 
-    res.json({
-      token,
-      user: userWithoutPassword,
-    });
+    res.json({ token, user: userWithoutPassword });
   } catch (error: unknown) {
     console.error('🚨 Erreur login:', error);
     res.status(500).json({ error: 'Erreur serveur' });

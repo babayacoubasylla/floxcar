@@ -14,7 +14,6 @@ import typeDepenseRoutes from './routes/types-depense.routes';
 
 const app = express();
 
-// ✅ Autoriser le frontend Render
 app.use(
   cors({
     origin: [
@@ -28,7 +27,6 @@ app.use(
 app.use(helmet());
 app.use(express.json());
 
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/depenses', depenseRoutes);
 app.use('/api/users', userRoutes);
@@ -38,12 +36,10 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/historique', historiqueRoutes);
 app.use('/api/types-depense', typeDepenseRoutes);
 
-// 404
 app.use((req, res) => {
   res.status(404).json({ error: 'Route non trouvée' });
 });
 
-// Gestion globale des erreurs
 const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Erreur interne du serveur' });
