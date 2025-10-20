@@ -2,8 +2,6 @@
 import axios from 'axios';
 import { getToken, logout } from './utils/auth';
 
-// En production, VITE_API_URL est défini dans Render
-// En local, Vite proxy /api → http://localhost:5000/api
 const API_BASE_URL = '/api';
 
 const api = axios.create({

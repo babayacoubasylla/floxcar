@@ -13,22 +13,14 @@ const LoginForm: React.FC = () => {
 
   const getDashboardPath = (role: string): string => {
     switch (role) {
-      case 'LOGISTICIEN':
-        return '/dashboard/logisticien';
-      case 'CONTROLEUR_FINANCIER':
-        return '/dashboard/finance';
-      case 'CONTROLEUR_GESTION':
-        return '/depenses/a-pourvoir';
-      case 'RESPONSABLE_ADMIN':
-        return '/depenses/a-pourvoir';
-      case 'ADMIN_GENERAL':
-        return '/dashboard/admin';
-      case 'DG':
-        return '/depenses/a-pourvoir';
-      case 'SUPER_ADMIN':
-        return '/dashboard/superadmin';
-      default:
-        return '/';
+      case 'LOGISTICIEN': return '/dashboard/logisticien';
+      case 'CONTROLEUR_FINANCIER': return '/dashboard/finance';
+      case 'CONTROLEUR_GESTION': return '/depenses/a-pourvoir';
+      case 'RESPONSABLE_ADMIN': return '/depenses/a-pourvoir';
+      case 'ADMIN_GENERAL': return '/dashboard/admin';
+      case 'DG': return '/depenses/a-pourvoir';
+      case 'SUPER_ADMIN': return '/dashboard/superadmin';
+      default: return '/';
     }
   };
 
@@ -38,7 +30,7 @@ const LoginForm: React.FC = () => {
     setLoading(true);
 
     try {
-      // ✅ CORRIGÉ : pas de /api ici
+      // ✅ Appel correct : /auth/login (pas /api/auth/login)
       const response = await api.post('/auth/login', { email, password });
       const { token, user } = response.data;
 
