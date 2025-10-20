@@ -1,7 +1,7 @@
 // src/controllers/vehicules.controller.ts
 import type { Request, Response } from 'express';
 // 🔥 IMPORTER depuis le chemin personnalisé spécifié dans schema.prisma 🔥
-import { PrismaClient } from '../generated/client'; // Assurez-vous que le chemin relatif est correct
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient(); // Utilise le client depuis le chemin personnalisé
 
