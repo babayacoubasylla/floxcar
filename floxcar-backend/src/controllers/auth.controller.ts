@@ -1,20 +1,10 @@
-// src/controllers/auth.controller.ts
+// floxcar-backend/src/controllers/auth.controller.ts
 import type { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-// 🔥 IMPORTER depuis le chemin personnalisé spécifié dans schema.prisma 🔥
 import { PrismaClient } from '@prisma/client';
 
-// 🔥 Singleton sécurisé pour Vercel / serverless
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient();
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
-}
+const prisma = new PrismaClient();
 
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;

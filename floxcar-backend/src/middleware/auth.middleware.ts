@@ -1,4 +1,4 @@
-// src/middleware/auth.middleware.ts
+// floxcar-backend/src/middleware/auth.middleware.ts
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
@@ -14,7 +14,12 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      return res.status(500).json({ error: 'Erreur de configuration serveur' });
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as any;
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
 
     if (!user) {
