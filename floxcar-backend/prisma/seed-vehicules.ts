@@ -1,5 +1,5 @@
 // floxcar-backend/prisma/seed-vehicules.ts
-import { PrismaClient } from '../src/generated/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -9,7 +9,6 @@ async function main() {
     { immatriculation: 'BB-1234-D', type: 'Véhicule de Service', codeParc: 'VS002', description: 'Véhicule utilitaire' },
     { immatriculation: 'CC-4567-E', type: 'Camion Plateau', codeParc: 'CP003', description: 'Plateau 15m³' },
     { immatriculation: 'DD-8910-F', type: 'Voiture de Direction', codeParc: 'VD004', description: 'Berline de direction' },
-    // Ajoutez ici vos autres véhicules
   ];
 
   for (const vehiculeData of vehicules) {

@@ -1,5 +1,5 @@
 // floxcar-backend/prisma/seed-users.ts
-import { PrismaClient } from '../src/generated/client';
+import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -11,7 +11,6 @@ async function main() {
   console.log('🔐 Mot de passe haché généré (tous les comptes utilisent "password123")');
 
   const users = [
-    // Vos comptes principaux
     { email: 'finance@test.com', nom: 'DAF', role: 'CONTROLEUR_FINANCIER' },
     { email: 'logisticien@test.com', nom: 'Logisticien Principal', role: 'LOGISTICIEN' },
     { email: 'gestion@test.com', nom: 'Contrôleur de Gestion', role: 'CONTROLEUR_GESTION' },
