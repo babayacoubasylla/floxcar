@@ -1,0 +1,151 @@
+// floxcar-backend/prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums ---
+
+enum Role {
+  LOGISTICIEN
+  CONTROLEUR_FINANCIER
+  CONTROLEUR_GESTION
+  RESPONSABLE_ADMIN
+  ADMIN_GENERAL
+  DG
+  SUPER_ADMIN
+}
+
+enum StatutDepense {
+  BROUILLON
+  SOUMIS
+  // Anciens statuts (conservés pour compatibilité si besoin)
+  REJETE_FINANCE
+  VALIDE_FINANCE
+  REJETE_ADMIN
+  VALIDE_ADMIN
+  // Nouveaux statuts pour le workflow parallèle
+  TRAITE_PAR_CONTROLEUR_FINANCIER
+  TRAITE_PAR_CONTROLEUR_GESTION
+  TRAITE_PAR_RESPONSABLE_ADMIN
+  TRAITE_PAR_ADMIN_GENERAL // Alias de VALIDE_ADMIN
+  REJETE // Rejet par l'un des 4 principaux
+  TERMINE // Validé par 3 sur 4
+}
+
+// --- Models ---
+
+model User {
+  id        Int      @id @default(autoincrement())
+  nom       String
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+
+  // Relations pour les dépenses soumises
+  demandesSoumises Depense[] @relation("SoumisPar")
+
+  // Relations pour les validations
+  validationsControleurFinancier Depense[] @relation("ValideParControleurFinancier")
+  validationsControleurGestion   Depense[] @relation("ValideParControleurGestion")
+  validationsResponsableAdmin    Depense[] @relation("ValideParResponsableAdmin")
+  validationsAdminGeneral        Depense[] @relation("ValideParAdminGeneral")
+
+  // Relation pour les validations DG (facultatif)
+  validationsDG Depense[] @relation("ValideParDG")
+}
+
+model Vehicule {
+  id              Int      @id @default(autoincrement())
+  type            String
+  immatriculation String   @unique
+  codeParc        String?
+  description     String?
+  statut          String?
+  createdAt       DateTime @default(now())
+
+  depenses Depense[]
+}
+
+model TypeDepense {
+  id          Int      @id @default(autoincrement())
+  nom         String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  depenses Depense[]
+}
+
+model Depense {
+  id               Int           @id @default(autoincrement())
+  dateIntervention DateTime
+  typeVehicule     String
+  codeParc         String
+  typeDepenseId    Int
+  typeDepense      TypeDepense   @relation(fields: [typeDepenseId], references: [id])
+  libelle          String
+  quantite         Int?
+  montant          Int
+  statut           StatutDepense @default(SOUMIS)
+  dateCreation     DateTime      @default(now())
+
+  // Commentaires pour chaque validateur
+  commentaireControleurFinancier String?
+  commentaireControleurGestion   String?
+  commentaireResponsableAdmin    String?
+  commentaireAdminGeneral        String?
+  commentaireDG                  String? // Pour le DG
+  commentaireLogisticien         String?
+
+  dateReport DateTime?
+
+  vehiculeId Int
+  vehicule   Vehicule @relation(fields: [vehiculeId], references: [id])
+
+  soumisParId Int
+  soumisPar   User @relation("SoumisPar", fields: [soumisParId], references: [id])
+
+  // Champs de validation pour les nouveaux rôles
+  valideParControleurFinancierId Int?
+  valideParControleurFinancier   User? @relation("ValideParControleurFinancier", fields: [valideParControleurFinancierId], references: [id])
+
+  valideParControleurGestionId Int?
+  valideParControleurGestion   User? @relation("ValideParControleurGestion", fields: [valideParControleurGestionId], references: [id])
+
+  valideParResponsableAdminId Int?
+  valideParResponsableAdmin   User? @relation("ValideParResponsableAdmin", fields: [valideParResponsableAdminId], references: [id])
+
+  // On garde l'ancien champ pour compatibilité
+  valideParAdminGeneralId Int?
+  valideParAdminGeneral   User? @relation("ValideParAdminGeneral", fields: [valideParAdminGeneralId], references: [id])
+
+  // Validation DG (facultatif)
+  valideParDGId Int?
+  valideParDG   User? @relation("ValideParDG", fields: [valideParDGId], references: [id])
+
+  documents    Document[]
+  commentaires Commentaire[] @relation("DepenseCommentaires")
+}
+
+model Commentaire {
+  id        Int      @id @default(autoincrement())
+  texte     String
+  auteur    String
+  date      DateTime @default(now())
+  depenseId Int
+  depense   Depense  @relation("DepenseCommentaires", fields: [depenseId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id        Int     @id @default(autoincrement())
+  url       String
+  nom       String
+  depenseId Int
+  depense   Depense @relation(fields: [depenseId], references: [id], onDelete: Cascade)
+}

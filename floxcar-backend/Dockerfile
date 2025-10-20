@@ -1,0 +1,9 @@
+# server/Dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+RUN npx prisma generate
+EXPOSE 5000
+CMD ["node", "dist/server.js"]  # ← ajustez selon votre point d'entrée
