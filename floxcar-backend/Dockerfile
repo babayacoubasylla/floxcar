@@ -8,7 +8,7 @@ RUN npm ci
 
 COPY . .
 
-# 🔥 LIGNE CRITIQUE MANQUANTE :
+# 🔥 LIGNE INDISPENSABLE :
 RUN npm run build
 
 CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node dist/server.js"]
