@@ -2,9 +2,9 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci                # ← Installe TOUTES les dépendances (y compris dev)
 COPY . .
-RUN npm run build
+RUN npm run build         # ← Génère le dossier dist/
 
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
