@@ -1,11 +1,15 @@
-# client/Dockerfile
+# floxcar-frontend/Dockerfile
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci                # ← Installe TOUTES les dépendances (y compris dev)
-COPY . .
-RUN npm run build         # ← Génère le dossier dist/
 
+# Installe TOUTES les dépendances (y compris devDependencies)
+COPY package*.json ./
+RUN npm ci  # ← Supprimez "--only=production"
+
+COPY . .
+RUN npm run build  # ← Cela exécutera "tsc && vite build"
+
+# Production : Nginx léger
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/nginx.conf
