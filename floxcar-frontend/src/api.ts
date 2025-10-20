@@ -2,8 +2,8 @@
 import axios from 'axios';
 import { getToken, logout } from './utils/auth';
 
-// ✅ Utilise /api → Nginx redirige vers le backend
-const API_BASE_URL = '/api';
+// 🔥 CONTORNE NGINX : appelle directement le backend
+const API_BASE_URL = 'https://floxcar-backend.onrender.com';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -23,7 +23,7 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     if (
       error.response?.status === 401 &&
-      originalRequest.url !== '/auth/login'
+      originalRequest.url !== '/api/auth/login'
     ) {
       const currentToken = getToken();
       if (currentToken) logout();
