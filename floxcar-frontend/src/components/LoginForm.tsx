@@ -1,4 +1,4 @@
-// src/components/LoginForm.tsx
+// floxcar-frontend/src/components/LoginForm.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCar, FaKey, FaUser } from 'react-icons/fa';
@@ -38,7 +38,8 @@ const LoginForm: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await api.post('/api/auth/login', { email, password });
+      // ✅ CORRIGÉ : pas de /api ici
+      const response = await api.post('/auth/login', { email, password });
       const { token, user } = response.data;
 
       localStorage.setItem('token', token);
