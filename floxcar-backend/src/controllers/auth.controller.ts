@@ -3,7 +3,7 @@ import type { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 // 🔥 IMPORTER depuis le chemin personnalisé spécifié dans schema.prisma 🔥
-import { PrismaClient } from '../generated/client';
+import { PrismaClient } from '@prisma/client';
 
 // 🔥 Singleton sécurisé pour Vercel / serverless
 const globalForPrisma = global as unknown as { prisma: PrismaClient };

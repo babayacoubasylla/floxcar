@@ -3,17 +3,17 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# 1. Installer les dépendances COMPLÈTES (y compris devDependencies)
+# Installer TOUTES les dépendances (nécessaire pour la compilation)
 COPY package*.json ./
 RUN npm ci
 
-# 2. Copier tout le code
+# Copier le code source
 COPY . .
 
-# 3. Compiler le projet (génère dist/)
+# Compiler le projet → génère dist/ + Prisma Client dans node_modules
 RUN npm run build
 
-# 4. (Optionnel) Supprimer les dépendances de dev pour alléger l'image
+# Optionnel : alléger l'image en supprimant les devDependencies
 RUN npm prune --production
 
 EXPOSE 5000

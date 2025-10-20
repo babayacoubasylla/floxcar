@@ -1,6 +1,6 @@
 // src/controllers/depenses.controller.ts
 import { Request, Response } from 'express';
-import { PrismaClient } from '../generated/client';
+import { PrismaClient } from '@prisma/client';
 import * as XLSX from 'xlsx';
 
 const prisma = new PrismaClient();

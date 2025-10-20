@@ -1,7 +1,6 @@
-// floxcar-backend/prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/client"
+  // output supprimé → utilise le chemin par défaut (node_modules)
 }
 
 datasource db {
@@ -24,18 +23,16 @@ enum Role {
 enum StatutDepense {
   BROUILLON
   SOUMIS
-  // Anciens statuts (conservés pour compatibilité si besoin)
   REJETE_FINANCE
   VALIDE_FINANCE
   REJETE_ADMIN
   VALIDE_ADMIN
-  // Nouveaux statuts pour le workflow parallèle
   TRAITE_PAR_CONTROLEUR_FINANCIER
   TRAITE_PAR_CONTROLEUR_GESTION
   TRAITE_PAR_RESPONSABLE_ADMIN
-  TRAITE_PAR_ADMIN_GENERAL // Alias de VALIDE_ADMIN
-  REJETE                     // Rejet par l'un des 4 principaux
-  TERMINE                  // Validé par 3 sur 4
+  TRAITE_PAR_ADMIN_GENERAL
+  REJETE
+  TERMINE
 }
 
 // --- Models ---
@@ -48,16 +45,11 @@ model User {
   role      Role
   createdAt DateTime @default(now())
 
-  // Relations pour les dépenses soumises
   demandesSoumises Depense[] @relation("SoumisPar")
-
-  // Relations pour les validations
   validationsControleurFinancier  Depense[] @relation("ValideParControleurFinancier")
   validationsControleurGestion    Depense[] @relation("ValideParControleurGestion")
   validationsResponsableAdmin     Depense[] @relation("ValideParResponsableAdmin")
   validationsAdminGeneral         Depense[] @relation("ValideParAdminGeneral")
-
-  // Relation pour les validations DG (facultatif)
   validationsDG                   Depense[] @relation("ValideParDG")
 }
 
@@ -95,12 +87,11 @@ model Depense {
   statut                 StatutDepense @default(SOUMIS)
   dateCreation           DateTime @default(now())
 
-  // Commentaires pour chaque validateur
   commentaireControleurFinancier String?
   commentaireControleurGestion   String?
   commentaireResponsableAdmin    String?
   commentaireAdminGeneral        String?
-  commentaireDG                  String? // Pour le DG
+  commentaireDG                  String?
   commentaireLogisticien         String?
 
   dateReport             DateTime?
@@ -111,7 +102,6 @@ model Depense {
   soumisParId            Int
   soumisPar              User @relation("SoumisPar", fields: [soumisParId], references: [id])
 
-  // Champs de validation pour les nouveaux rôles
   valideParControleurFinancierId  Int?
   valideParControleurFinancier   User? @relation("ValideParControleurFinancier", fields: [valideParControleurFinancierId], references: [id])
 
@@ -121,11 +111,9 @@ model Depense {
   valideParResponsableAdminId     Int?
   valideParResponsableAdmin      User? @relation("ValideParResponsableAdmin", fields: [valideParResponsableAdminId], references: [id])
 
-  // On garde l'ancien champ pour compatibilité
   valideParAdminGeneralId         Int?
   valideParAdminGeneral          User? @relation("ValideParAdminGeneral", fields: [valideParAdminGeneralId], references: [id])
 
-  // Validation DG (facultatif)
   valideParDGId                   Int?
   valideParDG                    User? @relation("ValideParDG", fields: [valideParDGId], references: [id])
 
