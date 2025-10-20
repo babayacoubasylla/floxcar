@@ -3,19 +3,16 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Installer TOUTES les dépendances (nécessaire pour la compilation)
+# Installer toutes les dépendances (y compris dev pour la compilation)
 COPY package*.json ./
 RUN npm ci
 
-# Copier le code source
+# Copier tout le code
 COPY . .
 
-# Compiler le projet → génère dist/ + Prisma Client dans node_modules
+# Compiler le projet (génère dist/)
 RUN npm run build
 
-# Optionnel : alléger l'image en supprimant les devDependencies
-RUN npm prune --production
-
-EXPOSE 5000
-
-CMD ["node", "dist/server.js"]
+# Exécuter les migrations PRISMA AU DÉMARRAGE + lancer le serveur
+# Render utilise le port 10000 par défaut → écoute sur 0.0.0.0:10000
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
