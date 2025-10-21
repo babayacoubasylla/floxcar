@@ -3,7 +3,7 @@ import axios from 'axios';
 import { getToken, logout } from './utils/auth';
 
 // Appel direct au backend (contourne Nginx)
-const API_BASE_URL = 'https://floxcar-backend.onrender.com/api';
+const API_BASE_URL = 'https://floxcar-backend.onrender.com/api'; // ← espaces SUPPRIMÉS
 
 const api = axios.create({
   baseURL: API_BASE_URL,
