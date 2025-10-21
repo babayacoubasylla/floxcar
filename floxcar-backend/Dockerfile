@@ -10,5 +10,4 @@ COPY . .
 
 RUN npm run build
 
-# 🔥 Démarrer le serveur SANS seed
 CMD ["node", "dist/server.js"]

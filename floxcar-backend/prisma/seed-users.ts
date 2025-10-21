@@ -5,49 +5,33 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🔍 Démarrage du seeding des utilisateurs...');
-
   const password = await bcrypt.hash('password123', 10);
-  console.log('🔐 Mot de passe haché généré (tous les comptes utilisent "password123")');
 
   const users = [
-    { email: 'finance@test.com', nom: 'DAF', role: 'CONTROLEUR_FINANCIER' },
-    { email: 'logisticien@test.com', nom: 'Logisticien Principal', role: 'LOGISTICIEN' },
-    { email: 'gestion@test.com', nom: 'Contrôleur de Gestion', role: 'CONTROLEUR_GESTION' },
-    { email: 'admin@test.com', nom: 'Administrateur Général', role: 'ADMIN_GENERAL' },
-    { email: 'dg@test.com', nom: 'Directeur Général', role: 'DG' },
     { email: 'superadmin@test.com', nom: 'Super Administrateur', role: 'SUPER_ADMIN' },
-    { email: 'controleur.finance@test.com', nom: 'Contrôleur Financier', role: 'CONTROLEUR_FINANCIER' },
-    { email: 'controleur.gestion@test.com', nom: 'Contrôleur de Gestion', role: 'CONTROLEUR_GESTION' },
+    { email: 'admin@test.com', nom: 'Administrateur Général', role: 'ADMIN_GENERAL' },
+    { email: 'finance@test.com', nom: 'DAF', role: 'CONTROLEUR_FINANCIER' },
+    { email: 'gestion@test.com', nom: 'Contrôleur de Gestion', role: 'CONTROLEUR_GESTION' },
     { email: 'responsable.admin@test.com', nom: 'Responsable Administration', role: 'RESPONSABLE_ADMIN' },
+    { email: 'logisticien@test.com', nom: 'Logisticien Principal', role: 'LOGISTICIEN' },
+    { email: 'dg@test.com', nom: 'Directeur Général', role: 'DG' },
   ];
 
-  console.log(`📝 Traitement de ${users.length} utilisateurs...`);
-
   for (const userData of users) {
-    console.log(`🔄 Traitement : ${userData.email}`);
     const existing = await prisma.user.findUnique({ where: { email: userData.email } });
-
     if (existing) {
-      await prisma.user.update({
-        where: { email: userData.email },
-        data: { ...userData, password },
-      });
-      console.log(`  ✅ Mis à jour : ${userData.email}`);
+      await prisma.user.update({ where: { email: userData.email }, data: { ...userData, password } });
     } else {
-      await prisma.user.create({
-        data: { ...userData, password },
-      });
-      console.log(`  ✅ Créé : ${userData.email}`);
+      await prisma.user.create({ data: { ...userData, password } });
     }
   }
 
-  console.log('✅ Tous les utilisateurs sont prêts.');
+  console.log('✅ Utilisateurs créés');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Erreur dans le seed :', e);
+    console.error('❌ Erreur seed:', e);
     process.exit(1);
   })
   .finally(async () => {

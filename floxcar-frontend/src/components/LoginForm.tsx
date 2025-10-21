@@ -30,7 +30,6 @@ const LoginForm: React.FC = () => {
     setLoading(true);
 
     try {
-      // ✅ Appel correct : /auth/login (pas /api/auth/login)
       const response = await api.post('/auth/login', { email, password });
       const { token, user } = response.data;
 
