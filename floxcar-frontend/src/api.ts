@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { getToken, logout } from './utils/auth';
 
-// 🔥 CONTORNE NGINX : appelle directement le backend
+// 🔥 Contourne complètement le proxy Nginx
 const API_BASE_URL = 'https://floxcar-backend.onrender.com';
 
 const api = axios.create({
