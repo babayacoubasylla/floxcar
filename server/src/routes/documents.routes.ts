@@ -1,11 +1,11 @@
 import { Router } from 'express'
-import { authenticateToken } from '../middleware/auth.middleware'
+import { authenticateToken } from '../middleware/auth.middleware.js'
 import { 
   getDocuments,
   getDocumentById,
   createDocument,
   deleteDocument
-} from '../controllers/documents.controller'
+} from '../controllers/documents.controller.js'
 
 const router = Router()
 

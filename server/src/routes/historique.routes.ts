@@ -1,16 +1,12 @@
-import { Router } from 'express'
-import { authenticateToken } from '../middleware/auth.middleware'
-import { 
-  getHistoriqueGlobal,
-  getHistoriqueUtilisateur,
-  getHistoriqueVehicule
-} from '../controllers/historique.controller'
+import { Router } from 'express';
+import { authenticateToken } from '../middleware/auth.middleware.js';
+import {
+  getHistoriqueGlobal
+} from '../controllers/historique.controller.js';
 
-const router = Router()
+const router = Router();
 
-// Routes protégées
-router.get('/global', authenticateToken, getHistoriqueGlobal)
-router.get('/utilisateur/:id', authenticateToken, getHistoriqueUtilisateur)
-router.get('/vehicule/:id', authenticateToken, getHistoriqueVehicule)
+// Toutes les routes sont protégées
+router.get('/global', authenticateToken, getHistoriqueGlobal);
 
-export default router
+export default router;

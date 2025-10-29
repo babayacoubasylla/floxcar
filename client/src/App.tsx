@@ -1,3 +1,4 @@
+// client/src/App.tsx
 import React from 'react';
 import {
   BrowserRouter as Router,
@@ -15,6 +16,7 @@ import DashboardLogisticien from './pages/DashboardLogisticien';
 import DashboardFinance from './pages/DashboardFinance';
 import DashboardAdmin from './pages/DashboardAdmin';
 import DashboardSuperAdmin from './pages/DashboardSuperAdmin';
+import DashboardGestion from './pages/DashboardGestion';
 
 // Pages admin
 import GestionUtilisateurs from './pages/GestionUtilisateurs';
@@ -23,25 +25,20 @@ import GestionTypesDepense from './pages/GestionTypesDepense';
 
 // Pages logisticien
 import FormulaireDepense from './pages/FormulaireDepense';
-import MesDepenses from './pages/MesDepenses'; 
+import MesDepenses from './pages/MesDepenses';
 
 // Pages génériques
-import HistoriqueGlobal from './pages/HistoriqueGlobal'; 
-// NOTE: Importez votre composant de Statistiques réelles ici (ex: StatistiquesFinance)
-// Pour l'exemple, nous réutilisons HistoriqueGlobal
-// import StatistiquesFinance from './pages/StatistiquesFinance'; 
+import HistoriqueDepenses from './pages/HistoriqueDepenses'; // Assure-toi que ce composant existe
 
 // Pages validation
 import DepensesFinance from './pages/DepensesFinance';
-import DepensesAdmin from './pages/DepensesAdmin'; 
+import DepensesAdmin from './pages/DepensesAdmin';
 
 /**
  * Composant pour gérer le contenu principal de l'application, y compris le Navbar et les Routes.
- * Utilise `useLocation` pour déterminer si le Navbar doit être affiché.
  */
 function AppContent() {
   const location = useLocation();
-  // Afficher le navbar seulement si l'utilisateur est connecté (chemin différent de '/')
   const showNavbar = location.pathname !== '/';
 
   return (
@@ -51,27 +48,36 @@ function AppContent() {
         {/* Route publique */}
         <Route path="/" element={<LoginForm />} />
 
+        {/* Routes communes à tous les rôles authentifiés */}
+        {/* Historique accessible par tous, le filtrage se fera côté backend/composant */}
+        <Route element={<ProtectedRoute allowedRoles={['LOGISTICIEN', 'FINANCE', 'GESTION', 'ADMIN_GENERAL', 'SUPER_ADMIN', 'DG']} />}>
+          <Route path="/historique" element={<HistoriqueDepenses />} />
+        </Route>
+
         {/* Routes protégées pour LOGISTICIEN */}
         <Route element={<ProtectedRoute allowedRoles={['LOGISTICIEN']} />}>
           <Route path="/dashboard/logisticien" element={<DashboardLogisticien />} />
           <Route path="/depense/nouvelle" element={<FormulaireDepense />} />
-          <Route path="/depenses/mes-depenses" element={<MesDepenses />} /> 
-          <Route path="/depenses/historique" element={<HistoriqueGlobal />} />
+          <Route path="/depenses/mes-depenses" element={<MesDepenses />} />
+          {/* Ancienne route historique pour logisticien, peut-être à supprimer si /historique gère tout */}
+          {/* <Route path="/depenses/historique" element={<HistoriqueDepenses />} /> */}
         </Route>
 
         {/* Routes protégées pour FINANCE */}
         <Route element={<ProtectedRoute allowedRoles={['FINANCE']} />}>
           <Route path="/dashboard/finance" element={<DashboardFinance />} />
           <Route path="/depenses/finance" element={<DepensesFinance />} />
-          
-          {/* ⬇️ ROUTES FINANCE AJOUTÉES/CORRIGÉES ⬇️ */}
-          <Route path="/finance/statistiques" element={<HistoriqueGlobal />} /> {/* Remplacez par le composant Statistique correct */}
-          <Route path="/finance/historique" element={<HistoriqueGlobal />} />
-          
+          {/* Ancienne route, peut-être redondante avec /historique */}
+          {/* <Route path="/finance/statistiques" element={<HistoriqueDepenses />} /> */}
+        </Route>
+
+         {/* Routes protégées pour GESTION */}
+         <Route element={<ProtectedRoute allowedRoles={['GESTION']} />}>
+          <Route path="/dashboard/gestion" element={<DashboardGestion />} />
         </Route>
 
         {/* Routes protégées pour ADMIN_GENERAL ET SUPER_ADMIN */}
-        <Route element={<ProtectedRoute allowedRoles={['ADMIN_GENERAL', 'SUPER_ADMIN']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['ADMIN_GENERAL', 'SUPER_ADMIN', 'DG']} />}>
           <Route path="/dashboard/admin" element={<DashboardAdmin />} />
           <Route path="/depenses/admin" element={<DepensesAdmin />} />
         </Route>
@@ -84,20 +90,15 @@ function AppContent() {
           <Route path="/admin/types-depense" element={<GestionTypesDepense />} />
         </Route>
 
-        {/* Redirection par défaut pour les routes non trouvées */}
+        {/* Redirection par défaut */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );
 }
 
-/**
- * Composant racine de l'application.
- * Configure le routeur et enveloppe le contenu.
- */
 function App() {
   return (
-    // Activation des future flags React Router pour supprimer les avertissements
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <div className="min-h-screen bg-gray-50">
         <AppContent />

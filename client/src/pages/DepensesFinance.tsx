@@ -1,173 +1,175 @@
-// client/src/pages/DepensesFinance.tsx
-
-import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import api from '../api'
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { FaFileInvoice, FaChartBar, FaHistory, FaCheck, FaTimes } from 'react-icons/fa';
+import api from '../api';
 
 interface Depense {
-  id: number
-  dateIntervention: string
-  typeVehicule: string
-  codeParc: string
-  typeDepense: string
-  libelle: string
-  montant: number
+  id: number;
+  dateIntervention: string;
+  typeVehicule: string;
+  codeParc: string;
+  typeDepense: string;
+  libelle: string;
+  montant: number;
   soumisPar: {
-    nom: string
-  }
+    nom: string;
+  };
 }
 
-const DepensesFinance: React.FC = () => {
-  const [depenses, setDepenses] = useState<Depense[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [commentaire, setCommentaire] = useState('')
-  const [depenseId, setDepenseId] = useState<number | null>(null)
-  const [action, setAction] = useState<'valider' | 'rejeter' | null>(null)
-  const navigate = useNavigate()
+const DashboardFinance: React.FC = () => {
+  const [depenses, setDepenses] = useState<Depense[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDepenses()
-  }, [])
+    fetchDepenses();
+  }, []);
 
   const fetchDepenses = async () => {
     try {
-      const response = await api.get('/api/depenses/en-attente-finance')
-      setDepenses(response.data)
+      const response = await api.get('/api/depenses/en-attente-finance');
+      setDepenses(response.data);
     } catch (err) {
-      setError('Erreur lors du chargement des dépenses')
-      console.error(err)
+      console.error('Erreur lors du chargement des dépenses:', err);
+      alert('Impossible de charger les dépenses. Vérifiez votre connexion.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const handleValidation = async () => {
-    if (!depenseId || !action) return
-
+  const handleAction = async (depenseId: number, action: 'valider' | 'rejeter') => {
     try {
-      await api.put(`/api/depenses/${depenseId}/valider-finance`, {
-        statut: action,
-        commentaire
-      })
-      alert('Dépense traitée avec succès !')
-      setDepenseId(null)
-      setAction(null)
-      setCommentaire('')
-      fetchDepenses() // Rafraîchir la liste
-    } catch (err) {
-      setError('Erreur lors du traitement de la dépense')
-      console.error(err)
-    }
-  }
+      if (action === 'valider') {
+        // ✅ Envoi d'un corps vide pour forcer Content-Type: application/json
+        await api.patch(`/api/depenses/${depenseId}/valider/finance`, {});
+        alert(`✅ Dépense n°${depenseId} validée avec succès.`);
+      } else {
+        alert(`❌ Le rejet n’est pas encore implémenté.`);
+        return;
+      }
 
-  if (loading) return <div className="p-6 text-center">Chargement des dépenses...</div>
-  if (error) return <div className="p-6 text-center text-red-500">{error}</div>
+      setDepenses((prev) => prev.filter((d) => d.id !== depenseId));
+    } catch (err: any) {
+      console.error(`Erreur lors de l’action ${action} sur la dépense n°${depenseId}:`, err);
+      if (err.response?.status === 401) {
+        alert('Votre session a expiré. Veuillez vous reconnecter.');
+      } else if (err.response?.status === 404) {
+        alert(`La dépense n°${depenseId} est introuvable ou déjà traitée.`);
+      } else if (err.response?.status === 500) {
+        alert('Erreur serveur. Veuillez réessayer plus tard.');
+      } else {
+        alert(`Échec de l’action "${action}". Vérifiez la console.`);
+      }
+    }
+  };
+
+  const handleValidation = (depenseId: number) => handleAction(depenseId, 'valider');
+  const handleRejet = (depenseId: number) => handleAction(depenseId, 'rejeter');
+
+  if (loading) return <div className="p-6 text-center">Chargement...</div>;
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-gray-50 min-h-screen">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-800">Dépenses à valider</h2>
-        <p className="text-gray-600 mt-2">Liste des dépenses soumises par les logisticiens.</p>
+        <h1 className="text-3xl font-bold text-green-800">Dashboard Finance</h1>
+        <p className="text-gray-600 mt-2">Bienvenue dans votre espace finance.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-green-100">
+          <div className="flex items-center">
+            <div className="bg-green-100 p-3 rounded-full">
+              <FaFileInvoice className="h-8 w-8 text-green-600" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 ml-4">Dépenses à valider</h3>
+          </div>
+          <p className="text-gray-600 mt-3">Voir les dépenses en attente</p>
+          <Link to="/depenses/finance" className="mt-4 inline-block bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition font-medium">
+            Voir les dépenses
+          </Link>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-blue-100">
+          <div className="flex items-center">
+            <div className="bg-blue-100 p-3 rounded-full">
+              <FaChartBar className="h-8 w-8 text-blue-600" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 ml-4">Statistiques</h3>
+          </div>
+          <p className="text-gray-600 mt-3">Voir les dépenses par mois</p>
+          <Link to="/finance/statistiques" className="mt-4 inline-block bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition font-medium">
+            Voir les stats
+          </Link>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-purple-100">
+          <div className="flex items-center">
+            <div className="bg-purple-100 p-3 rounded-full">
+              <FaHistory className="h-8 w-8 text-purple-600" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 ml-4">Historique</h3>
+          </div>
+          <p className="text-gray-600 mt-3">Voir toutes les dépenses</p>
+          <Link to="/finance/historique" className="mt-4 inline-block bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition font-medium">
+            Voir l'historique
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Véhicule</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Libellé</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Soumis par</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {depenses.map((depense) => (
-                <tr key={depense.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(depense.dateIntervention).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{depense.codeParc}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{depense.typeDepense}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{depense.libelle}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{depense.montant.toLocaleString()} FCFA</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{depense.soumisPar.nom}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => {
-                        setDepenseId(depense.id)
-                        setAction('valider')
-                      }}
-                      className="text-green-600 hover:text-green-900 mr-4"
-                    >
-                      Valider
-                    </button>
-                    <button
-                      onClick={() => {
-                        setDepenseId(depense.id)
-                        setAction('rejeter')
-                      }}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Rejeter
-                    </button>
-                  </td>
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">Dépenses en attente de validation</h2>
+
+        {depenses.length === 0 ? (
+          <p className="text-gray-500">Aucune dépense en attente.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Véhicule</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Libellé</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Soumis par</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Modal de validation */}
-      {depenseId && action && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">
-              {action === 'valider' ? 'Valider la dépense' : 'Rejeter la dépense'}
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Êtes-vous sûr de vouloir {action === 'valider' ? 'valider' : 'rejeter'} cette dépense ?
-            </p>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Commentaire (optionnel)</label>
-              <textarea
-                value={commentaire}
-                onChange={(e) => setCommentaire(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={3}
-                placeholder="Ajouter un commentaire..."
-              />
-            </div>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={() => {
-                  setDepenseId(null)
-                  setAction(null)
-                  setCommentaire('')
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleValidation}
-                className={`px-4 py-2 rounded-lg text-white ${
-                  action === 'valider' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-                }`}
-              >
-                Confirmer
-              </button>
-            </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {depenses.map((depense) => (
+                  <tr key={depense.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {new Date(depense.dateIntervention).toLocaleDateString('fr-FR')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{depense.codeParc}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{depense.typeDepense}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{depense.libelle}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {depense.montant.toLocaleString('fr-FR')} FCFA
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{depense.soumisPar.nom}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => handleValidation(depense.id)}
+                        className="text-green-600 hover:text-green-900 mr-4 flex items-center"
+                      >
+                        <FaCheck className="mr-1" /> Valider
+                      </button>
+                      <button
+                        onClick={() => handleRejet(depense.id)}
+                        className="text-red-600 hover:text-red-900 flex items-center"
+                      >
+                        <FaTimes className="mr-1" /> Rejeter
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default DepensesFinance
+export default DashboardFinance;

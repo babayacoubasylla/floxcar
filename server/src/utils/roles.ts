@@ -1,0 +1,9 @@
+// server/src/utils/roles.ts
+export const ROLES = {
+  LOGISTICIEN: 'LOGISTICIEN',
+  FINANCE: 'FINANCE',
+  GESTION: 'GESTION',
+  ADMIN_GENERAL: 'ADMIN_GENERAL',
+  DG: 'DG',
+  SUPER_ADMIN: 'SUPER_ADMIN',
+};

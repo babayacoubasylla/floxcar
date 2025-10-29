@@ -1,12 +1,12 @@
 import { Router } from 'express'
-import { authenticateToken } from '../middleware/auth.middleware'
+import { authenticateToken } from '../middleware/auth.middleware.js'
 import { 
   getCommentaires,
   getCommentaireById,
   createCommentaire,
   updateCommentaire,
   deleteCommentaire
-} from '../controllers/commentaires.controller'
+} from '../controllers/commentaires.controller.js'
 
 const router = Router()
 

@@ -1,53 +1,65 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { FaCar, FaKey, FaUser } from 'react-icons/fa'
-import api from '../api'
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FaCar, FaKey, FaUser } from 'react-icons/fa';
+import api from '../api';
 
 const LoginForm: React.FC = () => {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const navigate = useNavigate()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
     try {
       const response = await api.post('/api/auth/login', {
         email,
         password,
-      })
+      });
 
-      const { token, user } = response.data
+      const { token, user } = response.data;
 
-      localStorage.setItem('token', token)
-      localStorage.setItem('user', JSON.stringify(user))
+      if (!token || !user) {
+        throw new Error('Réponse invalide du serveur');
+      }
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
 
       switch (user.role) {
         case 'LOGISTICIEN':
-          navigate('/dashboard/logisticien')
-          break
+          navigate('/dashboard/logisticien');
+          break;
         case 'FINANCE':
-          navigate('/dashboard/finance')
-          break
+          navigate('/dashboard/finance');
+          break;
+        case 'GESTION':
+          navigate('/dashboard/gestion');
+          break;
         case 'ADMIN_GENERAL':
-          navigate('/dashboard/admin')
-          break
+          navigate('/dashboard/admin');
+          break;
         case 'SUPER_ADMIN':
-          navigate('/dashboard/superadmin')
-          break
+          navigate('/dashboard/superadmin');
+          break;
         default:
-          navigate('/')
+          navigate('/');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Erreur de connexion')
+      console.error('Erreur de connexion:', err);
+      setError(
+        err.response?.data?.error ||
+        err.message ||
+        'Erreur de connexion'
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
@@ -61,7 +73,9 @@ const LoginForm: React.FC = () => {
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">
           FLOXCAR
         </h2>
-        <p className="text-center text-gray-600 mb-8">Gestion de flux de maintenance</p>
+        <p className="text-center text-gray-600 mb-8">
+          Gestion de flux de maintenance
+        </p>
 
         {error && (
           <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg text-sm">
@@ -112,7 +126,7 @@ const LoginForm: React.FC = () => {
         </p>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default LoginForm
+export default LoginForm;

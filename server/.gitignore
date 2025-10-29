@@ -1,5 +1,16 @@
 node_modules
 # Keep environment variables out of version control
 .env
+.env.local
 
+# Build output
+dist
+build
+
+# Prisma
 /src/generated/prisma
+
+# Scripts de dev local
+hash.ts
+list-users.ts
+reset-password.ts
