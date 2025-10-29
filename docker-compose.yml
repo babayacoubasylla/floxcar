@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: floxcar
+      POSTGRES_PASSWORD: floxcar_secure_password
+      POSTGRES_DB: floxcar_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: ./server
+    ports:
+      - "5000"
+    environment:
+      DATABASE_URL: postgresql://floxcar:floxcar_secure_password@db:5432/floxcar_db
+      JWT_SECRET: super_secret_jwt_key_2025
+    depends_on:
+      - db
+
+  frontend:
+    build: ./client
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
