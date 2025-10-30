@@ -9,6 +9,7 @@ import depensesRoutes from './routes/depenses.routes.js';
 import documentsRoutes from './routes/documents.routes.js';
 import commentairesRoutes from './routes/commentaires.routes.js';
 import historiqueRoutes from './routes/historique.routes.js';
+import maintenanceRoutes from './routes/maintenance.routes.js';
 
 dotenv.config();
 
@@ -31,6 +32,11 @@ app.use('/api/historique', historiqueRoutes); // ✅ Bien montée
 app.get('/', (req, res) => {
   res.send('🚀 Bienvenue sur l’API FLOXCAR !');
 });
+
+// Monte la route de maintenance UNIQUEMENT si autorisée explicitement
+if (process.env.ALLOW_DB_RESET === 'true') {
+  app.use('/admin', maintenanceRoutes);
+}
 
 app.listen(PORT, () => {
   console.log(`✅ Serveur lancé sur http://localhost:${PORT}`);
