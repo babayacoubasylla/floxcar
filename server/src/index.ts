@@ -11,6 +11,7 @@ import commentairesRoutes from './routes/commentaires.routes.js';
 import historiqueRoutes from './routes/historique.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
 import importRoutes from './routes/import.routes.js';
+import seedRoutes from './routes/seed.routes.js';
 import maintenanceRoutes from './routes/maintenance.routes.js';
 
 dotenv.config();
@@ -32,6 +33,7 @@ app.use('/api/commentaires', commentairesRoutes);
 app.use('/api/historique', historiqueRoutes); // ✅ Bien montée
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/import', importRoutes);
+app.use('/api/seed', seedRoutes);
 
 app.get('/', (req, res) => {
   res.send('🚀 Bienvenue sur l’API FLOXCAR !');

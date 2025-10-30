@@ -9,6 +9,8 @@ const ImportDepenses: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [jsonText, setJsonText] = useState<string>('');
+  const [jsonResult, setJsonResult] = useState<any>(null);
 
   const onSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     setResult(null);
@@ -35,6 +37,26 @@ const ImportDepenses: React.FC = () => {
         (e instanceof Error ? e.message : null) ||
         'Erreur import';
       setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onImportJson = async () => {
+    setLoading(true);
+    setError(null);
+    setJsonResult(null);
+    try {
+      let payload: any;
+      try {
+        payload = JSON.parse(jsonText);
+      } catch (e) {
+        throw new Error('JSON invalide');
+      }
+      const res = await api.post('/api/seed/json', payload);
+      setJsonResult(res.data);
+    } catch (e: any) {
+      setError(e?.response?.data?.error || e.message || 'Erreur import JSON');
     } finally {
       setLoading(false);
     }
@@ -94,6 +116,40 @@ const ImportDepenses: React.FC = () => {
           })()}
         </div>
       )}
+
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded border p-4">
+          <h2 className="font-semibold mb-2">Importer JSON (Véhicules + Types + Dépenses)</h2>
+          <p className="text-sm text-gray-500 mb-2">Collez votre JSON au format indiqué.</p>
+          <textarea
+            value={jsonText}
+            onChange={(e) => setJsonText(e.target.value)}
+            rows={10}
+            className="w-full border rounded p-2 font-mono text-sm"
+            placeholder='{"vehicules": [...], "types_depenses": [...], "depenses": [...]}'
+          />
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={onImportJson}
+              disabled={loading || jsonText.trim().length === 0}
+              className={`px-4 py-2 rounded text-white ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'}`}
+            >
+              Importer JSON
+            </button>
+          </div>
+
+          {jsonResult && (
+            <div className="mt-3 text-sm bg-purple-50 text-purple-800 border border-purple-200 rounded p-3">
+              <div><span className="font-semibold">Véhicules créés/maj:</span> {jsonResult.createdVehicules}</div>
+              <div><span className="font-semibold">Types créés/maj:</span> {jsonResult.createdTypes}</div>
+              <div><span className="font-semibold">Dépenses créées:</span> {jsonResult.createdDepenses}</div>
+              {jsonResult.skippedDepenses > 0 && (
+                <div><span className="font-semibold">Dépenses ignorées:</span> {jsonResult.skippedDepenses} (manque véhicule ou auteur)</div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

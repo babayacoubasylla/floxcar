@@ -8,12 +8,18 @@ import api from '../api';
 const DashboardSuperAdmin: React.FC = () => {
   const [exporting, setExporting] = useState(false);
   const [stats, setStats] = useState<{ enAttente: number; valideesParMoi: number; terminees: number; rejetees: number } | null>(null);
+  const [latestVehicules, setLatestVehicules] = useState<any[]>([]);
+  const [typesDepense, setTypesDepense] = useState<any[]>([]);
 
   useEffect(() => {
     const load = async () => {
       try {
         const res = await api.get('/api/depenses/stats');
         if (res.data?.scope === 'ADMIN') setStats(res.data);
+        const v = await api.get('/api/vehicules');
+        setLatestVehicules((v.data || []).slice(0, 8));
+        const t = await api.get('/api/types-depense');
+        setTypesDepense((t.data || []).slice(0, 12));
       } catch (e) {
         console.error('Erreur stats super admin', e);
       }
@@ -155,8 +161,42 @@ const DashboardSuperAdmin: React.FC = () => {
         </div>
       </div>
 
-      {/* Section Statistiques (Placeholder) */}
-      {/* Section placeholder supprimée; les stats sont au-dessus */}
+      {/* Aperçu Véhicules et Types pour visibilité rapide */}
+      <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-xl shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800 flex items-center"><FaCar className="mr-2 text-green-600"/> Véhicules (aperçu)</h3>
+            <Link to="/admin/vehicules" className="text-sm text-green-700 hover:underline">Voir tout</Link>
+          </div>
+          {latestVehicules.length === 0 ? (
+            <div className="text-gray-500">Aucun véhicule pour l’instant.</div>
+          ) : (
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {latestVehicules.map((v) => (
+                <li key={v.id} className="border rounded p-2 text-sm text-gray-700">
+                  <div className="font-medium">{v.immatriculation}</div>
+                  <div className="text-gray-500">{v.type}{v.codeParc ? ` • ${v.codeParc}` : ''}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800 flex items-center"><FaList className="mr-2 text-yellow-600"/> Types de dépense (aperçu)</h3>
+            <Link to="/admin/types-depense" className="text-sm text-yellow-700 hover:underline">Voir tout</Link>
+          </div>
+          {typesDepense.length === 0 ? (
+            <div className="text-gray-500">Aucun type pour l’instant.</div>
+          ) : (
+            <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {typesDepense.map((t) => (
+                <li key={t.id} className="border rounded p-2 text-sm text-gray-700">{t.nom}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

@@ -15,6 +15,7 @@ import {
 import { getUser, logout } from '../utils/auth';
 import api from '../api';
 import { FaBell } from 'react-icons/fa';
+import { FaArrowLeft } from 'react-icons/fa';
 
 const Navbar: React.FC = () => {
   const location = useLocation();
@@ -79,6 +80,17 @@ const Navbar: React.FC = () => {
         <div className="flex justify-between h-16">
           {/* Partie gauche : Logo et Titre */}
           <div className="flex items-center">
+            {/* Bouton retour global (sauf page de login) */}
+            {location.pathname !== '/' && (
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="mr-3 inline-flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 focus:outline-none"
+                title="Retour"
+              >
+                <FaArrowLeft className="text-gray-700" />
+              </button>
+            )}
             <div className="flex-shrink-0 flex items-center">
               <FaCar className="h-8 w-8 text-blue-600" />
               <span className="ml-2 text-xl font-bold text-gray-800">FLOXCAR</span>
