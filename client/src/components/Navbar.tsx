@@ -9,7 +9,8 @@ import {
   FaSignOutAlt,
   FaList,
   FaUsers,
-  FaTruck
+  FaTruck,
+  FaUpload
 } from 'react-icons/fa';
 import { getUser, logout } from '../utils/auth';
 import api from '../api';
@@ -149,6 +150,14 @@ const Navbar: React.FC = () => {
                     >
                       <FaFileInvoice className="mr-2" /> Gérer les dépenses
                     </Link>
+                    <Link
+                      to="/admin/import"
+                      className={`inline-flex items-center px-1 pt-1 border-b-2 ${
+                        isActive('/admin/import') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      } text-sm font-medium`}
+                    >
+                      <FaUpload className="mr-2" /> Importer
+                    </Link>
                   </>
                 )}
 
@@ -195,6 +204,14 @@ const Navbar: React.FC = () => {
                       } text-sm font-medium`}
                     >
                       <FaFileInvoice className="mr-2" /> Gérer les dépenses
+                    </Link>
+                    <Link
+                      to="/admin/import"
+                      className={`inline-flex items-center px-1 pt-1 border-b-2 ${
+                        isActive('/admin/import') ? 'border-purple-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      } text-sm font-medium`}
+                    >
+                      <FaUpload className="mr-2" /> Importer
                     </Link>
                   </>
                 )}

@@ -11,11 +11,15 @@ interface Vehicule {
   id: number;
   immatriculation: string;
   type?: string;
+  codeParc?: string;
 }
 
 const FormulaireDepense: React.FC = () => {
   const [types, setTypes] = useState<TypeDepense[]>([]);
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
+  const [vehiculeOpen, setVehiculeOpen] = useState(false);
+  const [vehiculeQuery, setVehiculeQuery] = useState('');
+  const [vehiculeActiveIndex, setVehiculeActiveIndex] = useState(0);
   const [formData, setFormData] = useState({
     dateIntervention: '',
     codeParc: '',
@@ -28,6 +32,7 @@ const FormulaireDepense: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [typeSearch, setTypeSearch] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -123,6 +128,7 @@ const FormulaireDepense: React.FC = () => {
               name="dateIntervention"
               value={formData.dateIntervention}
               onChange={handleChange}
+              title="Date d'intervention"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               required
             />
@@ -142,35 +148,126 @@ const FormulaireDepense: React.FC = () => {
           </div>
         </div>
 
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Véhicule</label>
-          <select
-            name="vehiculeId"
-            value={formData.vehiculeId}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            required
-          >
-            <option value="">Sélectionnez un véhicule</option>
-            {vehicules.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.immatriculation} {v.type ? `(${v.type})` : ''}
-              </option>
-            ))}
-          </select>
+        <div className="mb-6 relative">
+          <label htmlFor="vehicule-combobox" className="block text-sm font-medium text-gray-700 mb-2">Véhicule</label>
+          <div className="relative">
+            <input
+              id="vehicule-combobox"
+              type="text"
+              value={vehiculeQuery}
+              onChange={(e) => {
+                setVehiculeQuery(e.target.value);
+                setVehiculeOpen(true);
+                setVehiculeActiveIndex(0);
+              }}
+              onFocus={() => setVehiculeOpen(true)}
+              onBlur={() => setTimeout(() => setVehiculeOpen(false), 150)}
+              onKeyDown={(e) => {
+                const filtered = vehicules.filter((v) => {
+                  const q = vehiculeQuery.trim().toLowerCase();
+                  if (!q) return true;
+                  const immat = v.immatriculation?.toLowerCase() || '';
+                  const t = v.type?.toLowerCase() || '';
+                  const parc = v.codeParc?.toLowerCase() || '';
+                  return immat.includes(q) || t.includes(q) || parc.includes(q);
+                });
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setVehiculeOpen(true);
+                  setVehiculeActiveIndex((i) => Math.min(i + 1, Math.max(filtered.length - 1, 0)));
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setVehiculeActiveIndex((i) => Math.max(i - 1, 0));
+                } else if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const choice = filtered[vehiculeActiveIndex];
+                  if (choice) {
+                    setFormData((prev) => ({ ...prev, vehiculeId: String(choice.id), codeParc: choice.codeParc || prev.codeParc }));
+                    setVehiculeQuery(`${choice.immatriculation}${choice.type ? ` (${choice.type})` : ''}${choice.codeParc ? ` - ${choice.codeParc}` : ''}`);
+                    setVehiculeOpen(false);
+                  }
+                } else if (e.key === 'Escape') {
+                  setVehiculeOpen(false);
+                }
+              }}
+              placeholder="Rechercher (immat, type, code parc) ..."
+              title="Recherche véhicule"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              required={true}
+            />
+            {vehiculeOpen && (
+              <ul
+                id="vehicule-listbox"
+                role="listbox"
+                aria-label="Résultats véhicules"
+                className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+              >
+                {vehicules
+                  .filter((v) => {
+                    const q = vehiculeQuery.trim().toLowerCase();
+                    if (!q) return true;
+                    const immat = v.immatriculation?.toLowerCase() || '';
+                    const t = v.type?.toLowerCase() || '';
+                    const parc = v.codeParc?.toLowerCase() || '';
+                    return immat.includes(q) || t.includes(q) || parc.includes(q);
+                  })
+                  .slice(0, 50)
+                  .map((v, idx) => {
+                    const active = idx === vehiculeActiveIndex;
+                    return (
+                      <li
+                        key={v.id}
+                        id={`vehicule-option-${idx}`}
+                        role="option"
+                        className={`cursor-pointer select-none relative py-2 pl-3 pr-9 ${active ? 'bg-blue-600 text-white' : 'text-gray-900'}`}
+                        onMouseDown={(e) => {
+                          // onMouseDown pour éviter le blur avant le click
+                          e.preventDefault();
+                          setFormData((prev) => ({ ...prev, vehiculeId: String(v.id), codeParc: v.codeParc || prev.codeParc }));
+                          setVehiculeQuery(`${v.immatriculation}${v.type ? ` (${v.type})` : ''}${v.codeParc ? ` - ${v.codeParc}` : ''}`);
+                          setVehiculeOpen(false);
+                        }}
+                        onMouseEnter={() => setVehiculeActiveIndex(idx)}
+                      >
+                        <span className="block truncate">
+                          {v.immatriculation} {v.type ? `(${v.type})` : ''} {v.codeParc ? `- ${v.codeParc}` : ''}
+                        </span>
+                      </li>
+                    );
+                  })}
+              </ul>
+            )}
+          </div>
+          {/* Champ caché pour validation requise */}
+          <input type="hidden" name="vehiculeId" value={formData.vehiculeId} />
         </div>
 
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">Type de dépense</label>
+          <input
+            type="text"
+            value={typeSearch}
+            onChange={(e) => setTypeSearch(e.target.value)}
+            placeholder="Rechercher un type..."
+            title="Recherche type de dépense"
+            className="mb-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          />
           <select
             name="typeDepenseId"
             value={formData.typeDepenseId}
             onChange={handleChange}
+            title="Sélection du type de dépense"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             required
           >
             <option value="">Sélectionnez un type</option>
-            {types.map((type) => (
+            {types
+              .filter((type) => {
+                const q = typeSearch.trim().toLowerCase();
+                if (!q) return true;
+                return type.nom.toLowerCase().includes(q);
+              })
+              .map((type) => (
               <option key={type.id} value={type.id}>
                 {type.nom}
               </option>
@@ -200,6 +297,7 @@ const FormulaireDepense: React.FC = () => {
               value={formData.quantite}
               onChange={handleChange}
               min="1"
+              title="Quantité"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -212,6 +310,7 @@ const FormulaireDepense: React.FC = () => {
               value={formData.montant}
               onChange={handleChange}
               min="0"
+              title="Montant en FCFA"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               required
             />

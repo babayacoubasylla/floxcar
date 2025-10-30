@@ -22,6 +22,7 @@ import DashboardGestion from './pages/DashboardGestion';
 import GestionUtilisateurs from './pages/GestionUtilisateurs';
 import GestionVehicules from './pages/GestionVehicules';
 import GestionTypesDepense from './pages/GestionTypesDepense';
+import ImportDepenses from './pages/ImportDepenses';
 
 // Pages logisticien
 import FormulaireDepense from './pages/FormulaireDepense';
@@ -80,6 +81,7 @@ function AppContent() {
         <Route element={<ProtectedRoute allowedRoles={['ADMIN_GENERAL', 'SUPER_ADMIN', 'DG']} />}>
           <Route path="/dashboard/admin" element={<DashboardAdmin />} />
           <Route path="/depenses/admin" element={<DepensesAdmin />} />
+          <Route path="/admin/import" element={<ImportDepenses />} />
         </Route>
 
         {/* Routes protégées exclusives pour SUPER_ADMIN */}
@@ -88,6 +90,7 @@ function AppContent() {
           <Route path="/admin/utilisateurs" element={<GestionUtilisateurs />} />
           <Route path="/admin/vehicules" element={<GestionVehicules />} />
           <Route path="/admin/types-depense" element={<GestionTypesDepense />} />
+          <Route path="/admin/import" element={<ImportDepenses />} />
         </Route>
 
         {/* Redirection par défaut */}
