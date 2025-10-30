@@ -50,18 +50,17 @@ function AppContent() {
         <Route path="/" element={<LoginForm />} />
 
         {/* Routes communes à tous les rôles authentifiés */}
-        {/* Historique accessible par tous, le filtrage se fera côté backend/composant */}
+        {/* Historique et soumission accessibles par tous; chaque utilisateur voit ses propres données */}
         <Route element={<ProtectedRoute allowedRoles={['LOGISTICIEN', 'FINANCE', 'GESTION', 'ADMIN_GENERAL', 'SUPER_ADMIN', 'DG']} />}>
           <Route path="/historique" element={<HistoriqueDepenses />} />
+          <Route path="/depense/nouvelle" element={<FormulaireDepense />} />
+          <Route path="/depenses/mes-depenses" element={<MesDepenses />} />
         </Route>
 
         {/* Routes protégées pour LOGISTICIEN */}
         <Route element={<ProtectedRoute allowedRoles={['LOGISTICIEN']} />}>
           <Route path="/dashboard/logisticien" element={<DashboardLogisticien />} />
-          <Route path="/depense/nouvelle" element={<FormulaireDepense />} />
-          <Route path="/depenses/mes-depenses" element={<MesDepenses />} />
-          {/* Ancienne route historique pour logisticien, peut-être à supprimer si /historique gère tout */}
-          {/* <Route path="/depenses/historique" element={<HistoriqueDepenses />} /> */}
+          {/* Soumission et "Mes dépenses" sont désormais dans la section commune */}
         </Route>
 
         {/* Routes protégées pour FINANCE */}
