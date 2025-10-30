@@ -1,8 +1,23 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FaFileInvoice, FaHistory, FaPlus } from 'react-icons/fa' // Importez seulement les icônes nécessaires
+import api from '../api'
 
 const DashboardLogisticien: React.FC = () => {
+  const [stats, setStats] = useState<{ total: number; valides: number; rejetees: number; enAttente: number } | null>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await api.get('/api/depenses/stats')
+        if (res.data?.scope === 'LOGISTICIEN') setStats(res.data)
+      } catch (e) {
+        console.error('Erreur stats logisticien', e)
+      }
+    }
+    load()
+  }, [])
+
   return (
     <div className="p-8 bg-background min-h-screen font-sans">
       <div className="mb-10 text-center">
@@ -52,9 +67,30 @@ const DashboardLogisticien: React.FC = () => {
 
       <div className="mt-12 bg-surface p-8 rounded-chic shadow-chic">
         <h2 className="text-2xl font-bold text-primary mb-6 font-display">Statistiques récentes</h2>
-        <div className="h-64 flex items-center justify-center bg-background rounded-xl">
-          <p className="text-gray-400 italic">Graphique à venir...</p>
-        </div>
+        {stats ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white border rounded-lg p-4">
+              <div className="text-sm text-gray-500">Total</div>
+              <div className="text-2xl font-bold">{stats.total}</div>
+            </div>
+            <div className="bg-white border rounded-lg p-4">
+              <div className="text-sm text-gray-500">Validées</div>
+              <div className="text-2xl font-bold text-green-600">{stats.valides}</div>
+            </div>
+            <div className="bg-white border rounded-lg p-4">
+              <div className="text-sm text-gray-500">Rejetées</div>
+              <div className="text-2xl font-bold text-red-600">{stats.rejetees}</div>
+            </div>
+            <div className="bg-white border rounded-lg p-4">
+              <div className="text-sm text-gray-500">En attente</div>
+              <div className="text-2xl font-bold text-yellow-600">{stats.enAttente}</div>
+            </div>
+          </div>
+        ) : (
+          <div className="h-64 flex items-center justify-center bg-background rounded-xl">
+            <p className="text-gray-400 italic">Chargement...</p>
+          </div>
+        )}
       </div>
     </div>
   )

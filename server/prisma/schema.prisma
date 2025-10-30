@@ -38,6 +38,7 @@ model User {
   demandesAdmin           Depense[]              @relation("ValideParAdmin")
   demandesDg              Depense[]              @relation("ValideParDg")
   historiqueValidations   HistoriqueValidation[] @relation("ValidateurHistorique")
+  notifications           Notification[]
 }
 
 model Vehicule {
@@ -102,6 +103,7 @@ model Depense {
   historiqueValidations  HistoriqueValidation[] @relation("DepenseHistorique")
   documents              Document[]
   commentaires           Commentaire[]         @relation("DepenseCommentaires")
+  notifications          Notification[]
 }
 
 model HistoriqueValidation {
@@ -136,4 +138,20 @@ model Document {
   depenseId  Int
   createdAt  DateTime @default(now())
   depense    Depense  @relation(fields: [depenseId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       String    // e.g. DEPENSE_VALIDEE, DEPENSE_REJETEE
+  title      String?
+  message    String
+  depenseId  Int?
+  depense    Depense?  @relation(fields: [depenseId], references: [id], onDelete: SetNull)
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@index([depenseId])
 }

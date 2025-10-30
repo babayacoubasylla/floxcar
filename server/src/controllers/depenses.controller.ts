@@ -12,6 +12,7 @@ const determinerStatutGlobal = async (depenseId: number): Promise<StatutDepense>
       valideParFinanceId: true,
       valideParGestionId: true,
       valideParAdminId: true,
+      soumisParId: true,
     },
   });
 
@@ -35,6 +36,19 @@ const determinerStatutGlobal = async (depenseId: number): Promise<StatutDepense>
     where: { id: depenseId },
     data: { statut: nouveauStatut },
   });
+
+  // Notification au logisticien lorsque l'ensemble est validé
+  if (nouveauStatut === 'TERMINE') {
+    await (prisma as any).notification.create({
+      data: {
+        userId: depense.soumisParId,
+        type: 'DEPENSE_VALIDEE',
+        title: 'Dépense validée',
+        message: `Votre dépense #${depenseId} a été validée par tous les contrôleurs.`,
+        depenseId,
+      },
+    });
+  }
 
   return nouveauStatut;
 };
@@ -282,6 +296,9 @@ export const validerDepenseFinance = async (req: Request, res: Response) => {
 
     const depense = await prisma.depense.findUnique({ where: { id: Number(id) } });
     if (!depense) return res.status(404).json({ error: 'Dépense introuvable' });
+    if (depense.statut === 'REJETEE') {
+      return res.status(400).json({ error: 'La dépense a été rejetée et ne peut pas être validée.' });
+    }
     if (depense.valideParFinanceId) {
       return res.status(400).json({ error: 'Dépense déjà validée par la finance.' });
     }
@@ -329,6 +346,9 @@ export const validerDepenseGestion = async (req: Request, res: Response) => {
 
     const depense = await prisma.depense.findUnique({ where: { id: Number(id) } });
     if (!depense) return res.status(404).json({ error: 'Dépense introuvable' });
+    if (depense.statut === 'REJETEE') {
+      return res.status(400).json({ error: 'La dépense a été rejetée et ne peut pas être validée.' });
+    }
     if (depense.valideParGestionId) {
       return res.status(400).json({ error: 'Dépense déjà validée par la gestion.' });
     }
@@ -379,6 +399,9 @@ export const validerDepenseAdmin = async (req: Request, res: Response) => {
 
     const depense = await prisma.depense.findUnique({ where: { id: Number(id) } });
     if (!depense) return res.status(404).json({ error: 'Dépense introuvable' });
+    if (depense.statut === 'REJETEE') {
+      return res.status(400).json({ error: 'La dépense a été rejetée et ne peut pas être validée.' });
+    }
     if (depense.valideParAdminId) {
       return res.status(400).json({ error: 'Dépense déjà validée par l’administration.' });
     }
@@ -461,5 +484,193 @@ export const getHistoriqueDepenses = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('[Historique] Erreur lors de la récupération:', error);
     res.status(500).json({ error: 'Erreur serveur lors de la récupération de l\'historique' });
+  }
+};
+
+// ========== Stats tableaux de bord ==========
+export const getDashboardStats = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const role = (req as any).user.role as string;
+
+    if (role === 'LOGISTICIEN') {
+      const [total, valides, rejetees, enAttente] = await Promise.all([
+        prisma.depense.count({ where: { soumisParId: userId } }),
+        prisma.depense.count({ where: { soumisParId: userId, statut: 'TERMINE' } }),
+        prisma.depense.count({ where: { soumisParId: userId, statut: 'REJETEE' } }),
+        prisma.depense.count({ where: { soumisParId: userId, statut: { in: ['SOUMIS', 'VALIDE_FINANCE', 'VALIDE_GESTION'] } } }),
+      ]);
+      return res.json({ scope: 'LOGISTICIEN', total, valides, rejetees, enAttente });
+    }
+
+    if (role === 'FINANCE') {
+      const [enAttente, valideesParMoi] = await Promise.all([
+        prisma.depense.count({ where: { statut: 'SOUMIS' } }),
+        prisma.depense.count({ where: { valideParFinanceId: userId } }),
+      ]);
+      return res.json({ scope: 'FINANCE', enAttente, valideesParMoi });
+    }
+
+    if (role === 'GESTION') {
+      const [enAttente, valideesParMoi] = await Promise.all([
+        prisma.depense.count({ where: { statut: 'VALIDE_FINANCE' } }),
+        prisma.depense.count({ where: { valideParGestionId: userId } }),
+      ]);
+      return res.json({ scope: 'GESTION', enAttente, valideesParMoi });
+    }
+
+    if (role === 'ADMIN_GENERAL' || role === 'SUPER_ADMIN') {
+      const [enAttente, valideesParMoi, terminees, rejetees] = await Promise.all([
+        prisma.depense.count({ where: { statut: 'VALIDE_GESTION' } }),
+        prisma.depense.count({ where: { valideParAdminId: userId } }),
+        prisma.depense.count({ where: { statut: 'TERMINE' } }),
+        prisma.depense.count({ where: { statut: 'REJETEE' } }),
+      ]);
+      return res.json({ scope: 'ADMIN', enAttente, valideesParMoi, terminees, rejetees });
+    }
+
+    return res.json({ scope: role, note: 'Aucune stat définie pour ce rôle pour le moment.' });
+  } catch (error) {
+    console.error('[Stats] Erreur:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
+// ========== Rejets ==========
+export const rejeterDepenseFinance = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { commentaire } = req.body;
+  const userId = (req as any).user.id;
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user?.role !== 'FINANCE' && user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Accès refusé. Rôle requis : FINANCE.' });
+    }
+
+    const depense = await prisma.depense.findUnique({ where: { id: Number(id) } });
+    if (!depense) return res.status(404).json({ error: 'Dépense introuvable' });
+    if (depense.valideParFinanceId) {
+      return res.status(400).json({ error: 'Impossible de rejeter : déjà validée par la finance.' });
+    }
+    if (depense.statut !== 'SOUMIS') {
+      return res.status(400).json({ error: 'La dépense n’est pas en attente de finance.' });
+    }
+
+    const updated = await prisma.depense.update({
+      where: { id: Number(id) },
+      data: {
+        statut: 'REJETEE',
+        commentaireFinance: commentaire || null,
+      },
+    });
+
+    await enregistrerValidation(Number(id), userId, 'FINANCE', 'REJETEE', commentaire);
+    // Notification au logisticien
+    await (prisma as any).notification.create({
+      data: {
+        userId: updated.soumisParId,
+        type: 'DEPENSE_REJETEE',
+        title: 'Dépense rejetée (Finance)',
+        message: `Votre dépense #${updated.id} a été rejetée par la finance. ${commentaire ? 'Motif: ' + commentaire : ''}`,
+        depenseId: updated.id,
+      },
+    });
+    return res.json(updated);
+  } catch (error) {
+    console.error('Erreur rejet finance:', error);
+    return res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
+export const rejeterDepenseGestion = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { commentaire } = req.body;
+  const userId = (req as any).user.id;
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user?.role !== 'GESTION' && user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Accès refusé. Rôle requis : GESTION.' });
+    }
+
+    const depense = await prisma.depense.findUnique({ where: { id: Number(id) } });
+    if (!depense) return res.status(404).json({ error: 'Dépense introuvable' });
+    if (depense.valideParGestionId) {
+      return res.status(400).json({ error: 'Impossible de rejeter : déjà validée par la gestion.' });
+    }
+    if (depense.statut !== 'VALIDE_FINANCE') {
+      return res.status(400).json({ error: 'La dépense n’est pas en attente de gestion.' });
+    }
+
+    const updated = await prisma.depense.update({
+      where: { id: Number(id) },
+      data: {
+        statut: 'REJETEE',
+        commentaireGestion: commentaire || null,
+      },
+    });
+
+    await enregistrerValidation(Number(id), userId, 'GESTION', 'REJETEE', commentaire);
+    // Notification au logisticien
+    await (prisma as any).notification.create({
+      data: {
+        userId: updated.soumisParId,
+        type: 'DEPENSE_REJETEE',
+        title: 'Dépense rejetée (Gestion)',
+        message: `Votre dépense #${updated.id} a été rejetée par la gestion. ${commentaire ? 'Motif: ' + commentaire : ''}`,
+        depenseId: updated.id,
+      },
+    });
+    return res.json(updated);
+  } catch (error) {
+    console.error('Erreur rejet gestion:', error);
+    return res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
+export const rejeterDepenseAdmin = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { commentaire } = req.body;
+  const userId = (req as any).user.id;
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user?.role !== 'ADMIN_GENERAL' && user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Accès refusé. Rôle requis : ADMIN_GENERAL.' });
+    }
+
+    const depense = await prisma.depense.findUnique({ where: { id: Number(id) } });
+    if (!depense) return res.status(404).json({ error: 'Dépense introuvable' });
+    if (depense.valideParAdminId) {
+      return res.status(400).json({ error: 'Impossible de rejeter : déjà validée par l’administration.' });
+    }
+    if (depense.statut !== 'VALIDE_GESTION') {
+      return res.status(400).json({ error: 'La dépense n’est pas en attente d’admin.' });
+    }
+
+    const updated = await prisma.depense.update({
+      where: { id: Number(id) },
+      data: {
+        statut: 'REJETEE',
+        commentaireAdmin: commentaire || null,
+      },
+    });
+
+    await enregistrerValidation(Number(id), userId, 'ADMIN_GENERAL', 'REJETEE', commentaire);
+    // Notification au logisticien
+    await (prisma as any).notification.create({
+      data: {
+        userId: updated.soumisParId,
+        type: 'DEPENSE_REJETEE',
+        title: 'Dépense rejetée (Administratif)',
+        message: `Votre dépense #${updated.id} a été rejetée par l’administratif. ${commentaire ? 'Motif: ' + commentaire : ''}`,
+        depenseId: updated.id,
+      },
+    });
+    return res.json(updated);
+  } catch (error) {
+    console.error('Erreur rejet admin:', error);
+    return res.status(500).json({ error: 'Erreur serveur' });
   }
 };

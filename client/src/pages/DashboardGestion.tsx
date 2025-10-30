@@ -1,9 +1,9 @@
 // client/src/pages/DashboardGestion.tsx
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import api from '../api';
-import { validerDepenseParRole } from '../utils/depenseService';
+import { validerDepenseParRole, rejeterDepenseParRole } from '../utils/depenseService';
 import { StatutValidation } from '../components/StatutValidation';
 import type { Depense } from '../types';
 
@@ -24,11 +24,13 @@ const DashboardGestion: React.FC = () => {
   const [depenses, setDepenses] = useState<Depense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
+  const [stats, setStats] = useState<{ enAttente: number; valideesParMoi: number } | null>(null);
+  // const navigate = useNavigate();
   const userRole = getUserRole();
 
   useEffect(() => {
     fetchDepenses();
+    fetchStats();
   }, []);
 
   const fetchDepenses = async () => {
@@ -48,12 +50,34 @@ const DashboardGestion: React.FC = () => {
     }
   };
 
+  const fetchStats = async () => {
+    try {
+      const res = await api.get('/api/depenses/stats');
+      if (res.data?.scope === 'GESTION') setStats({ enAttente: res.data.enAttente, valideesParMoi: res.data.valideesParMoi });
+    } catch (e) {
+      console.error('Erreur stats gestion', e);
+    }
+  };
+
   const handleValider = async (role: 'finance' | 'gestion' | 'admin', depenseId: number) => {
     const commentaire = prompt(`Ajouter un commentaire pour la validation (${role}) ?`);
     try {
       await validerDepenseParRole(depenseId, role, commentaire || '');
       alert(`✅ Validation ${role} effectuée avec succès !`);
       fetchDepenses();
+      fetchStats();
+    } catch (err: any) {
+      alert(`❌ Erreur : ${err.message}`);
+    }
+  };
+
+  const handleRejeter = async (depenseId: number) => {
+    const commentaire = prompt('Motif du rejet (optionnel) ?') || '';
+    try {
+      await rejeterDepenseParRole(depenseId, 'gestion', commentaire);
+      alert('❌ Dépense rejetée.');
+      fetchDepenses();
+      fetchStats();
     } catch (err: any) {
       alert(`❌ Erreur : ${err.message}`);
     }
@@ -66,9 +90,19 @@ const DashboardGestion: React.FC = () => {
     <div className="p-6">
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-gray-800">Contrôle de Gestion</h2>
-        <p className="text-gray-600 mt-2">
-          Validez les dépenses déjà approuvées par le contrôle financier.
-        </p>
+        <p className="text-gray-600 mt-2">Validez les dépenses déjà approuvées par la finance.</p>
+        {stats && (
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-white border rounded-lg p-4">
+              <div className="text-sm text-gray-500">En attente</div>
+              <div className="text-2xl font-bold">{stats.enAttente}</div>
+            </div>
+            <div className="bg-white border rounded-lg p-4">
+              <div className="text-sm text-gray-500">Validées par moi</div>
+              <div className="text-2xl font-bold">{stats.valideesParMoi}</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {depenses.length === 0 ? (
@@ -97,9 +131,7 @@ const DashboardGestion: React.FC = () => {
                       {new Date(depense.dateIntervention).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{depense.codeParc}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {depense.typeDepense?.nom || 'N/A'}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{depense.vehicule?.type || '—'}</td>
                     <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{depense.libelle}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {depense.montant.toLocaleString()} FCFA
@@ -111,6 +143,9 @@ const DashboardGestion: React.FC = () => {
                         userRole={userRole}
                         onValider={(role) => handleValider(role, depense.id)}
                       />
+                      {userRole === 'GESTION' && (
+                        <button onClick={() => handleRejeter(depense.id)} className="mt-2 text-xs text-red-600 hover:underline">Rejeter</button>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -1,11 +1,25 @@
 // client/src/pages/DashboardSuperAdmin.tsx
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaUser, FaCar, FaList, FaFileInvoice, FaChartBar } from 'react-icons/fa';
+import api from '../api';
 
 const DashboardSuperAdmin: React.FC = () => {
   const [exporting, setExporting] = useState(false);
+  const [stats, setStats] = useState<{ enAttente: number; valideesParMoi: number; terminees: number; rejetees: number } | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await api.get('/api/depenses/stats');
+        if (res.data?.scope === 'ADMIN') setStats(res.data);
+      } catch (e) {
+        console.error('Erreur stats super admin', e);
+      }
+    };
+    load();
+  }, []);
 
   const handleExport = async () => {
     setExporting(true);
@@ -128,23 +142,21 @@ const DashboardSuperAdmin: React.FC = () => {
             <FaChartBar className="h-8 w-8 md:h-10 md:w-10 text-teal-600" />
           </div>
           <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-2 text-center">Statistiques</h3>
-          <p className="text-gray-500 text-sm md:text-base text-center mb-4">Vue d'ensemble des données</p>
-          <button
-            className="bg-teal-600 hover:bg-teal-700 text-white w-full text-center py-2 px-4 rounded-lg font-medium text-sm md:text-base shadow transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 opacity-50 cursor-not-allowed"
-            disabled
-          >
-            Bientôt disponible
-          </button>
+          {stats ? (
+            <div className="w-full grid grid-cols-2 gap-3 text-sm text-gray-700">
+              <div className="bg-white border rounded-lg p-3"><span className="text-gray-500">En attente:</span> <span className="font-semibold">{stats.enAttente}</span></div>
+              <div className="bg-white border rounded-lg p-3"><span className="text-gray-500">Validées par moi:</span> <span className="font-semibold">{stats.valideesParMoi}</span></div>
+              <div className="bg-white border rounded-lg p-3"><span className="text-gray-500">Terminées:</span> <span className="font-semibold">{stats.terminees}</span></div>
+              <div className="bg-white border rounded-lg p-3"><span className="text-gray-500">Rejetées:</span> <span className="font-semibold">{stats.rejetees}</span></div>
+            </div>
+          ) : (
+            <div className="text-gray-400 italic">Chargement...</div>
+          )}
         </div>
       </div>
 
       {/* Section Statistiques (Placeholder) */}
-      <section className="mt-10 md:mt-12 bg-white p-6 rounded-xl shadow-lg">
-        <h2 className="text-xl md:text-2xl font-bold text-purple-700 mb-4">Statistiques du système</h2>
-        <div className="h-48 md:h-64 flex items-center justify-center bg-gray-100 rounded-lg">
-          <p className="text-gray-400 italic text-base md:text-lg">Graphique à venir...</p>
-        </div>
-      </section>
+      {/* Section placeholder supprimée; les stats sont au-dessus */}
     </div>
   );
 };

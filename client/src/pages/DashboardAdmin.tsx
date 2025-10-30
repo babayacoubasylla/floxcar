@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaFileInvoice, FaHistory, FaChartBar, FaCheck, FaTimes } from 'react-icons/fa';
 import api from '../api';
+import { rejeterDepenseParRole } from '../utils/depenseService';
 
 interface Depense {
   id: number;
@@ -18,9 +19,11 @@ interface Depense {
 const DashboardAdminGeneral: React.FC = () => {
   const [depenses, setDepenses] = useState<Depense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<{ enAttente: number; valideesParMoi: number; terminees: number; rejetees: number } | null>(null);
 
   useEffect(() => {
     fetchDepenses();
+    fetchStats();
   }, []);
 
   const fetchDepenses = async () => {
@@ -32,6 +35,15 @@ const DashboardAdminGeneral: React.FC = () => {
       alert('❌ Impossible de charger les dépenses. Vérifiez votre connexion.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const res = await api.get('/api/depenses/stats');
+      if (res.data?.scope === 'ADMIN') setStats({ enAttente: res.data.enAttente, valideesParMoi: res.data.valideesParMoi, terminees: res.data.terminees, rejetees: res.data.rejetees });
+    } catch (e) {
+      console.error('Erreur stats admin', e);
     }
   };
 
@@ -53,8 +65,16 @@ const DashboardAdminGeneral: React.FC = () => {
     }
   };
 
-  const handleRejet = (id: number) => {
-    alert('⚠️ La fonctionnalité de rejet n’est pas encore implémentée.');
+  const handleRejet = async (id: number) => {
+    const commentaire = prompt('Motif du rejet (optionnel) ?') || '';
+    try {
+      await rejeterDepenseParRole(id, 'admin', commentaire);
+      alert('❌ Dépense rejetée.');
+      setDepenses((prev) => prev.filter((d) => d.id !== id));
+      fetchStats();
+    } catch (err: any) {
+      alert(`❌ Erreur: ${err.message}`);
+    }
   };
 
   if (loading) {
@@ -80,7 +100,7 @@ const DashboardAdminGeneral: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500">
           <h3 className="font-semibold text-gray-700">Dépenses à valider</h3>
-          <p className="text-3xl font-bold text-blue-600 mt-2">{depenses.length}</p>
+          <p className="text-3xl font-bold text-blue-600 mt-2">{stats?.enAttente ?? depenses.length}</p>
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-md flex items-center">
@@ -101,6 +121,13 @@ const DashboardAdminGeneral: React.FC = () => {
             <FaChartBar className="mr-2 text-lg" />
             Statistiques
           </Link>
+          {stats && (
+            <div className="ml-auto grid grid-cols-2 gap-4 text-sm text-gray-700">
+              <div><span className="text-gray-500">Validées par moi:</span> <span className="font-semibold">{stats.valideesParMoi}</span></div>
+              <div><span className="text-gray-500">Terminées:</span> <span className="font-semibold">{stats.terminees}</span></div>
+              <div><span className="text-gray-500">Rejetées:</span> <span className="font-semibold">{stats.rejetees}</span></div>
+            </div>
+          )}
         </div>
       </div>
 

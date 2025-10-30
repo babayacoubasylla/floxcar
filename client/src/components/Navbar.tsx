@@ -1,23 +1,65 @@
 // client/src/components/Navbar.tsx
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 // ⬇️ TOUTES les icônes nécessaires sont importées ici, y compris FaList
 import {
   FaCar,
   FaChartBar,
   FaFileInvoice,
-  FaUser,
   FaSignOutAlt,
   FaList,
   FaUsers,
   FaTruck
 } from 'react-icons/fa';
 import { getUser, logout } from '../utils/auth';
+import api from '../api';
+import { FaBell } from 'react-icons/fa';
 
 const Navbar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const user = getUser();
+  const [openNotif, setOpenNotif] = useState(false);
+  const [notifs, setNotifs] = useState<any[]>([]);
+  const [loadingNotif, setLoadingNotif] = useState(false);
+  const unreadCount = useMemo(() => notifs.filter(n => !n.readAt).length, [notifs]);
+  const fetchNotifications = async (unreadOnly = true) => {
+    try {
+      setLoadingNotif(true);
+      const res = await api.get(`/api/notifications`, { params: { unreadOnly } });
+      setNotifs(res.data || []);
+    } catch (e) {
+      console.error('Erreur chargement notifications', e);
+    } finally {
+      setLoadingNotif(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    fetchNotifications(true);
+    const id = setInterval(() => fetchNotifications(true), 60000);
+    return () => clearInterval(id);
+  }, [user]);
+
+  const markAllRead = async () => {
+    try {
+      await api.post('/api/notifications/read-all');
+      // On met à jour localement
+      setNotifs((prev) => prev.map(n => ({ ...n, readAt: new Date().toISOString() })));
+    } catch (e) {
+      console.error('Erreur markAllRead', e);
+    }
+  };
+
+  const markOneRead = async (id: number) => {
+    try {
+      await api.patch(`/api/notifications/${id}/read`);
+      setNotifs((prev) => prev.map(n => n.id === id ? { ...n, readAt: new Date().toISOString() } : n));
+    } catch (e) {
+      console.error('Erreur markOneRead', e);
+    }
+  };
 
   // Log pour débogage - tu peux le retirer plus tard
   console.log("Navbar - User object from getUser():", user);
@@ -166,6 +208,54 @@ const Navbar: React.FC = () => {
             <div className="flex items-center">
               <div className="ml-3 relative">
                 <div className="flex items-center space-x-4">
+                  {/* Cloche notifications */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenNotif((o) => !o);
+                      if (!openNotif) fetchNotifications(true);
+                    }}
+                    className="relative inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 focus:outline-none"
+                    title="Notifications"
+                  >
+                    <FaBell className="text-gray-700" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {openNotif && (
+                    <div className="origin-top-right absolute right-24 mt-2 w-96 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                      <div className="p-3 border-b flex items-center justify-between">
+                        <span className="font-semibold text-gray-800">Notifications</span>
+                        <button onClick={markAllRead} className="text-sm text-blue-600 hover:underline">Tout marquer comme lu</button>
+                      </div>
+                      <div className="max-h-96 overflow-y-auto">
+                        {loadingNotif ? (
+                          <div className="p-4 text-center text-gray-500">Chargement...</div>
+                        ) : notifs.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500">Aucune notification</div>
+                        ) : (
+                          notifs.map((n) => (
+                            <div key={n.id} className={`px-4 py-3 border-b last:border-b-0 ${n.readAt ? 'bg-white' : 'bg-blue-50'}`}>
+                              <div className="flex items-start">
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium text-gray-800">{n.title || 'Notification'}</div>
+                                  <div className="text-sm text-gray-600">{n.message}</div>
+                                  <div className="mt-1 text-xs text-gray-400">{new Date(n.createdAt).toLocaleString('fr-FR')}</div>
+                                </div>
+                                {!n.readAt && (
+                                  <button onClick={() => markOneRead(n.id)} className="text-xs ml-3 text-blue-600 hover:underline">Marquer lu</button>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
                   {/* Affichage du nom de l'utilisateur */}
                   <span className="text-gray-700 font-medium hidden md:block">{user.nom}</span>
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaFileInvoice, FaChartBar, FaHistory, FaCheck, FaTimes } from 'react-icons/fa';
 import api from '../api';
+import { rejeterDepenseParRole } from '../utils/depenseService';
 
 interface Depense {
   id: number;
@@ -19,9 +20,11 @@ interface Depense {
 const DashboardFinance: React.FC = () => {
   const [depenses, setDepenses] = useState<Depense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<{ enAttente: number; valideesParMoi: number } | null>(null);
 
   useEffect(() => {
     fetchDepenses();
+    fetchStats();
   }, []);
 
   const fetchDepenses = async () => {
@@ -36,6 +39,15 @@ const DashboardFinance: React.FC = () => {
     }
   };
 
+  const fetchStats = async () => {
+    try {
+      const res = await api.get('/api/depenses/stats');
+      if (res.data?.scope === 'FINANCE') setStats({ enAttente: res.data.enAttente, valideesParMoi: res.data.valideesParMoi });
+    } catch (e) {
+      console.error('Erreur stats finance', e);
+    }
+  };
+
   const handleAction = async (depenseId: number, action: 'valider' | 'rejeter') => {
     try {
       if (action === 'valider') {
@@ -43,11 +55,13 @@ const DashboardFinance: React.FC = () => {
         await api.patch(`/api/depenses/${depenseId}/valider/finance`, {});
         alert(`✅ Dépense n°${depenseId} validée avec succès.`);
       } else {
-        alert(`❌ Le rejet n’est pas encore implémenté.`);
-        return;
+        const commentaire = prompt('Motif du rejet (optionnel) ?') || '';
+        await rejeterDepenseParRole(depenseId, 'finance', commentaire);
+        alert(`❌ Dépense n°${depenseId} rejetée.`);
       }
 
       setDepenses((prev) => prev.filter((d) => d.id !== depenseId));
+      fetchStats();
     } catch (err: any) {
       console.error(`Erreur lors de l’action ${action} sur la dépense n°${depenseId}:`, err);
       if (err.response?.status === 401) {
@@ -80,7 +94,10 @@ const DashboardFinance: React.FC = () => {
             <div className="bg-green-100 p-3 rounded-full">
               <FaFileInvoice className="h-8 w-8 text-green-600" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-800 ml-4">Dépenses à valider</h3>
+            <div className="ml-4">
+              <h3 className="text-xl font-semibold text-gray-800">Dépenses à valider</h3>
+              {stats && <p className="text-gray-500 mt-1">En attente: <span className="font-semibold">{stats.enAttente}</span></p>}
+            </div>
           </div>
           <p className="text-gray-600 mt-3">Voir les dépenses en attente</p>
           <Link to="/depenses/finance" className="mt-4 inline-block bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition font-medium">
@@ -93,7 +110,10 @@ const DashboardFinance: React.FC = () => {
             <div className="bg-blue-100 p-3 rounded-full">
               <FaChartBar className="h-8 w-8 text-blue-600" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-800 ml-4">Statistiques</h3>
+            <div className="ml-4">
+              <h3 className="text-xl font-semibold text-gray-800">Mes validations</h3>
+              {stats && <p className="text-gray-500 mt-1">Validées par moi: <span className="font-semibold">{stats.valideesParMoi}</span></p>}
+            </div>
           </div>
           <p className="text-gray-600 mt-3">Voir les dépenses par mois</p>
           <Link to="/finance/statistiques" className="mt-4 inline-block bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition font-medium">
